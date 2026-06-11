@@ -73,7 +73,7 @@ jobs:
           artifact-id: ${{ needs.build.outputs.artifact-id }}
           name: acquired-telemetry-service
           version: 1.1.${{ cloudbees.run_number }}
-          environment-name: telemetry-dev
+          environment-name: stryker-dev
           url: https://github.com/shozab-unify-examples/stryker-acquired-telemetry-service
 
   deploy-prod:
@@ -90,5 +90,5 @@ jobs:
           artifact-id: ${{ needs.build.outputs.artifact-id }}
           name: acquired-telemetry-service
           version: 1.1.${{ cloudbees.run_number }}
-          environment-name: telemetry-prod
+          environment-name: stryker-prod
           url: https://github.com/shozab-unify-examples/stryker-acquired-telemetry-service

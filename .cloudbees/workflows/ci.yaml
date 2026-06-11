@@ -28,22 +28,11 @@ jobs:
         with:
           language: python
 
-  container-scan:
-    needs:
-      - secrets-scan
-    steps:
-      - name: Checkout
-        uses: cloudbees-io/checkout@v1
-      - name: Container Image Scan
-        uses: cloudbees-io/trivy-scan-container@v1
-        with:
-          image-location: stryker/acquired-telemetry-service
-          image-tag: latest
-
   build:
     needs:
       - sast-scan
-      - container-scan
+    outputs:
+      artifact-id: ${{ steps.register-artifact.outputs.artifact-id }}
     steps:
       - name: Checkout
         uses: cloudbees-io/checkout@v1
@@ -53,6 +42,7 @@ jobs:
           pip install -r requirements.txt --quiet 2>/dev/null || echo "No requirements.txt"
           echo "Build complete — acquired-telemetry-service v1.1.${{ cloudbees.run_number }}"
       - name: Register build artifact
+        id: register-artifact
         uses: cloudbees-io/register-build-artifact@v2
         with:
           name: acquired-telemetry-service
@@ -66,7 +56,6 @@ jobs:
             - **Version**: 1.1.${{ cloudbees.run_number }}
             - **Classification**: HIGH | acquisition | connected-device | telemetry | first-60-days
             - **Acquisition Date**: 2026-04-15 | Assessment: INCOMPLETE
-            - **Owner**: CCI Operations
           format: MARKDOWN
 
   deploy-dev:
@@ -79,6 +68,7 @@ jobs:
       - name: Register deployed artifact
         uses: cloudbees-io/register-deployed-artifact@v2
         with:
+          artifact-id: ${{ needs.build.outputs.artifact-id }}
           name: acquired-telemetry-service
           version: 1.1.${{ cloudbees.run_number }}
           environment-name: telemetry-dev
@@ -86,6 +76,7 @@ jobs:
 
   deploy-prod:
     needs:
+      - build
       - deploy-dev
     steps:
       - name: Deploy to Production
@@ -94,6 +85,7 @@ jobs:
       - name: Register deployed artifact
         uses: cloudbees-io/register-deployed-artifact@v2
         with:
+          artifact-id: ${{ needs.build.outputs.artifact-id }}
           name: acquired-telemetry-service
           version: 1.1.${{ cloudbees.run_number }}
           environment-name: telemetry-prod

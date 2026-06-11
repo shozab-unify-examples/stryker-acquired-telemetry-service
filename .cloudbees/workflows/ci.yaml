@@ -8,39 +8,42 @@ on:
   workflow_dispatch:
 
 jobs:
-  secrets-scan:
+  scan:
     steps:
       - name: Checkout
         uses: cloudbees-io/checkout@v1
-      - name: Secrets Detection
-        uses: cloudbees-io/trufflehog-secret-scan-code@v1
+      - name: Mock Secrets Scan
+        uses: docker://alpine:3.19
+        run: echo "[SCAN] Secrets scan complete — 3 findings (CRITICAL: MQTT password, InfluxDB token, AWS keys)"
+      - name: Mock SAST Scan
+        uses: docker://alpine:3.19
+        run: echo "[SCAN] SAST scan complete — 1 finding (MEDIUM)"
+      - name: Publish Security Evidence
+        uses: cloudbees-io/publish-evidence-item@v1
         with:
-          branch: main
+          content: |
+            ## Security Scan Results — Acquired Telemetry Service
+            | Scanner | Findings | Severity |
+            |---------|----------|----------|
+            | Secrets | 3 | CRITICAL |
+            | SAST | 1 | MEDIUM |
 
-  sast-scan:
-    needs:
-      - secrets-scan
-    steps:
-      - name: Checkout
-        uses: cloudbees-io/checkout@v1
-      - name: SAST Scan
-        uses: cloudbees-io/sonarqube-bundled-sast-scan-code@v2
-        with:
-          language: python
+            **Acquisition Assessment**: INCOMPLETE — assessment-complete.json missing (CCI-ACQ-001)
+            **Critical Secrets**: MQTT password, InfluxDB token, AWS access/secret keys in src/ingest.py
+            **SLA Status**: OVERDUE — acquisition asset with no remediation timeline established
+          format: MARKDOWN
 
   build:
     needs:
-      - sast-scan
+      - scan
     outputs:
       artifact-id: ${{ steps.register-artifact.outputs.artifact-id }}
     steps:
       - name: Checkout
         uses: cloudbees-io/checkout@v1
-      - name: Build telemetry service
-        uses: docker://python:3.11-slim
-        run: |
-          pip install -r requirements.txt --quiet 2>/dev/null || echo "No requirements.txt"
-          echo "Build complete — acquired-telemetry-service v1.1.${{ cloudbees.run_number }}"
+      - name: Build
+        uses: docker://alpine:3.19
+        run: echo "Building acquired-telemetry-service v1.1.${{ cloudbees.run_number }}"
       - name: Register build artifact
         id: register-artifact
         uses: cloudbees-io/register-build-artifact@v2
@@ -48,12 +51,11 @@ jobs:
           name: acquired-telemetry-service
           version: 1.1.${{ cloudbees.run_number }}
           url: https://github.com/shozab-unify-examples/stryker-acquired-telemetry-service
-      - name: Publish build evidence
+      - name: Publish Build Evidence
         uses: cloudbees-io/publish-evidence-item@v1
         with:
           content: |
-            ## Acquired Telemetry Service Build
-            - **Version**: 1.1.${{ cloudbees.run_number }}
+            ## Build — Acquired Telemetry Service v1.1.${{ cloudbees.run_number }}
             - **Classification**: HIGH | acquisition | connected-device | telemetry | first-60-days
             - **Acquisition Date**: 2026-04-15 | Assessment: INCOMPLETE
           format: MARKDOWN
@@ -64,8 +66,8 @@ jobs:
     steps:
       - name: Deploy to Dev
         uses: docker://alpine:3.19
-        run: echo "Deploying acquired-telemetry-service v1.1.${{ cloudbees.run_number }} to DEV"
-      - name: Register deployed artifact
+        run: echo "Deployed acquired-telemetry-service v1.1.${{ cloudbees.run_number }} to DEV"
+      - name: Register Deployed Artifact
         uses: cloudbees-io/register-deployed-artifact@v2
         with:
           artifact-id: ${{ needs.build.outputs.artifact-id }}
@@ -81,8 +83,8 @@ jobs:
     steps:
       - name: Deploy to Production
         uses: docker://alpine:3.19
-        run: echo "Deploying acquired-telemetry-service v1.1.${{ cloudbees.run_number }} to PRODUCTION"
-      - name: Register deployed artifact
+        run: echo "Deployed acquired-telemetry-service v1.1.${{ cloudbees.run_number }} to PRODUCTION"
+      - name: Register Deployed Artifact
         uses: cloudbees-io/register-deployed-artifact@v2
         with:
           artifact-id: ${{ needs.build.outputs.artifact-id }}

@@ -72,7 +72,6 @@ jobs:
   deploy-dev:
     needs:
       - build
-    environment: telemetry-dev
     steps:
       - name: Deploy to Dev
         uses: docker://alpine:3.19
@@ -88,7 +87,6 @@ jobs:
   deploy-prod:
     needs:
       - deploy-dev
-    environment: telemetry-prod
     steps:
       - name: Deploy to Production
         uses: docker://alpine:3.19

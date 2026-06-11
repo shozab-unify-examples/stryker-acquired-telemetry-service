@@ -15,11 +15,11 @@ jobs:
       - name: Mock Secrets Scan
         uses: docker://alpine:3.19
         run: |
-          echo "[SCAN] Secrets scan complete — 3 findings (CRITICAL: MQTT password, InfluxDB token, AWS keys)"
+          echo "SCAN secrets complete - 3 findings CRITICAL"
       - name: Mock SAST Scan
         uses: docker://alpine:3.19
         run: |
-          echo "[SCAN] SAST scan complete — 1 finding (MEDIUM)"
+          echo "SCAN sast complete - 1 finding MEDIUM"
       - name: Publish Security Evidence
         uses: cloudbees-io/publish-evidence-item@v1
         with:
